@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useRouter } from 'next/router';
 import styles from '../styles/login.module.css';
@@ -9,6 +9,16 @@ const Login: React.FC = () => {
     const [password, setPassword] = useState('');
     const [error, setError] = useState<string | null>(null);
     const router = useRouter();
+
+    useEffect(() => {
+        // Automatically fill the email and password fields if passed in query parameters
+        if (router.query.email) {
+            setEmail(router.query.email as string);
+        }
+        if (router.query.password) {
+            setPassword(router.query.password as string);
+        }
+    }, [router.query]);
 
     const handleLogin = async () => {
         try {

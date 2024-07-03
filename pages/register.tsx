@@ -1,43 +1,62 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import axios from 'axios';
 import { useRouter } from 'next/router';
-import styles from '../styles/login.module.css';
-import { setTokenCookie } from '../utils/auth';
+import styles from '../styles/register.module.css';
 
-export default function Login() {
+const Register: React.FC = () => {
+    const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [error, setError] = useState(null);
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [error, setError] = useState<string | null>(null);
     const router = useRouter();
 
-    const handleLogin = async () => {
+    const handleRegister = async () => {
+        // Basic validation
+        if (!name.trim() || !email.trim() || !password.trim() || !confirmPassword.trim()) {
+            setError('Please fill out all fields');
+            return;
+        }
+
+        if (password !== confirmPassword) {
+            setError('Passwords do not match');
+            return;
+        }
+
         try {
-            const { data } = await axios.post('http://localhost:8000/api/login', {
+            const { data } = await axios.post('http://localhost:8000/api/register', {
+                name,
                 email,
                 password,
+                password_confirmation: confirmPassword,
             });
-            setTokenCookie(data.token);
-            router.push('/karyawan');
+            // Pass email and password to the login page via query parameters
+            router.push({
+                pathname: '/login',
+                query: { email, password },
+            });
         } catch (error) {
-            setError('Invalid login credentials');
+            setError('Registration failed');
         }
-    };
-
-    const handleRegisterRedirect = () => {
-        router.push('/register');
     };
 
     return (
         <div className={styles.container}>
             <div className={styles.form}>
-                <h1>Login</h1>
+                <h1>Register</h1>
+                <input
+                    type="text"
+                    placeholder="Name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className={styles.input}
+                />
                 <input
                     type="email"
                     placeholder="Email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className={styles.input}
-                    id="email"
                 />
                 <input
                     type="password"
@@ -45,16 +64,21 @@ export default function Login() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className={styles.input}
-                    id="password"
                 />
-                <button className={styles.button} onClick={handleLogin}>
-                    Login
+                <input
+                    type="password"
+                    placeholder="Confirm Password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className={styles.input}
+                />
+                <button className={styles.button} onClick={handleRegister}>
+                    Register
                 </button>
-                <p className={styles.registerLink} onClick={handleRegisterRedirect}>
-                    Don't have an account? Register here.
-                </p>
                 {error && <p className={styles.error}>{error}</p>}
             </div>
         </div>
     );
-}
+};
+
+export default Register;

@@ -12,7 +12,6 @@ const Register: React.FC = () => {
     const router = useRouter();
 
     const handleRegister = async () => {
-        // Basic validation
         if (!name.trim() || !email.trim() || !password.trim() || !confirmPassword.trim()) {
             setError('Please fill out all fields');
             return;
@@ -30,7 +29,6 @@ const Register: React.FC = () => {
                 password,
                 password_confirmation: confirmPassword,
             });
-            // Pass email and password to the login page via query parameters
             router.push({
                 pathname: '/login',
                 query: { email, password },

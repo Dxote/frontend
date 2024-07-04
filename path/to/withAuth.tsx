@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/router';
-import { getTokenCookie, setTokenCookie, removeTokenCookie } from '../../utils/auth';
+import { getTokenCookie, removeTokenCookie } from '../../utils/auth';
 import axios from 'axios';
 
 const withAuth = (WrappedComponent: React.ComponentType) => {
@@ -14,23 +14,23 @@ const withAuth = (WrappedComponent: React.ComponentType) => {
                 return;
             }
 
-            const refreshToken = async () => {
+            const checkToken = async () => {
                 try {
-                    const { data } = await axios.get('http://localhost:8000/api/refresh', {
+                    await axios.get('http://localhost:8000/api/check-token', {
                         headers: {
                             Authorization: `Bearer ${token}`,
                         },
                     });
-                    setTokenCookie(data.token, 10);
                 } catch (error) {
-                    console.error('Failed to refresh token:', error);
+                    console.error('Token is invalid or expired:', error);
                     removeTokenCookie();
                     router.push('/login');
                 }
             };
 
-            refreshToken();
-            const intervalId = setInterval(refreshToken, 600000);
+            checkToken();
+
+            const intervalId = setInterval(checkToken, 600000);
 
             return () => clearInterval(intervalId);
         }, [router]);

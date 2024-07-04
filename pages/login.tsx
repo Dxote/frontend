@@ -16,7 +16,7 @@ const Login: React.FC = () => {
                 email,
                 password,
             });
-            setTokenCookie(data.token, 10); // Set the token cookie with a 10-minute expiration
+            setTokenCookie(data.token, 10);
             router.push('/karyawan');
         } catch (error) {
             setError('Invalid login credentials');

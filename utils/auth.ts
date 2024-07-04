@@ -1,10 +1,10 @@
 import Cookies from 'js-cookie';
 
-export const setTokenCookie = (token: string, expiresInSeconds: number = 600) => {
-    Cookies.set('token', token, { expires: expiresInSeconds / 86400 });
+export const setTokenCookie = (token: string, expiresMinutes: number) => {
+    Cookies.set('token', token, { expires: expiresMinutes / (24 * 60) });
 };
 
-export const getTokenCookie = (): string | undefined => {
+export const getTokenCookie = () => {
     return Cookies.get('token');
 };
 

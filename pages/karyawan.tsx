@@ -1,9 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useRouter } from 'next/router';
-import { getTokenCookie, removeTokenCookie } from '../utils/auth';
-import CustomModal from '../components/Modal';
+import { getTokenCookie } from '../utils/auth';
+import Modal from '../components/Modal';
+import Layout from '../components/layout';
 import withAuth from '../path/to/withAuth';
+import Button from '../components/Button';
+import Table from '../components/Table'
 
 interface Karyawan {
     id: string;
@@ -75,7 +78,8 @@ const Karyawan: React.FC = () => {
         }
     };
 
-    const handleEdit = async () => {
+    const handleEdit = async (e: React.FormEvent) => {
+        e.preventDefault();
         try {
             const token = getTokenCookie();
             await axios.put(`http://localhost:8000/api/karyawanupdate/${editFormData.id}`, editFormData, {
@@ -91,7 +95,8 @@ const Karyawan: React.FC = () => {
         }
     };
 
-    const handleAddSubmit = async () => {
+    const handleAddSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
         try {
             const token = getTokenCookie();
             await axios.post('http://localhost:8000/api/karyawancreate', addFormData, {
@@ -137,161 +142,125 @@ const Karyawan: React.FC = () => {
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
-        setAddFormData({
-            ...addFormData,
-            [name]: value
-        });
-    };
-
-    const handleLogout = async () => {
-        try {
-            const token = getTokenCookie();
-            if (token) {
-                await axios.get('http://localhost:8000/api/logout', {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                });
-                removeTokenCookie();
-            }
-            router.push('/login');
-        } catch (error) {
-            if (error.response && error.response.status === 401) {
-                console.error('Unauthorized access during logout');
-            } else {
-                console.error('Error during logout', error);
-            }
+        if (editModalOpen) {
+            setEditFormData({
+                ...editFormData,
+                [name]: value
+            });
+        } else {
+            setAddFormData({
+                ...addFormData,
+                [name]: value
+            });
         }
     };
 
     return (
-        <div className="container mx-auto p-4">
-            <div className="flex justify-between mb-4">
-                <button
-                    className="bg-green-500 text-white py-2 px-4 rounded"
-                    onClick={handleAdd}
-                >
-                    Add Karyawan
-                </button>
-                <button
-                    className="bg-red-500 text-white py-2 px-4 rounded"
-                    onClick={handleLogout}
-                >
-                    Logout
-                </button>
+        <Layout>
+            <div className="container mx-auto p-4">
+                <div className="flex justify-between mb-4">
+                    <h1 className="text-2xl font-bold">Daftar Karyawan</h1>
+                    <Button onClick={handleAdd} className="bg-blue-500 text-white">Add Karyawan</Button>
+                </div>
+                {error && <p className="text-red-500">{error}</p>}
+                <Table
+                    headers={['name', 'address', 'phone']}
+                    data={karyawan}
+                    renderActions={(item) => (
+                        <>
+                            <Button onClick={() => handleEditModalOpen(item)} className="bg-yellow-500 text-white">Edit</Button>
+                            <Button onClick={() => handleDeleteModalOpen(item)} className="bg-red-500 text-white">Delete</Button>
+                        </>
+                    )}
+                />
             </div>
+            <Modal
+                isOpen={addModalOpen}
+                onClose={() => setAddModalOpen(false)}
+                title="Add Karyawan"
+            >
+                <form onSubmit={handleAddSubmit}>
+                    <input
+                        type="text"
+                        name="name"
+                        value={addFormData.name}
+                        onChange={handleInputChange}
+                        placeholder="Name"
+                    />
+                    <input
+                        type="text"
+                        name="address"
+                        value={addFormData.address}
+                        onChange={handleInputChange}
+                        placeholder="Address"
+                    />
+                    <input
+                        type="text"
+                        name="phone"
+                        value={addFormData.phone}
+                        onChange={handleInputChange}
+                        placeholder="Phone"
+                    />
+                    <Button
+                        type="submit"
+                        className="bg-blue-500 text-white"
+                    >
+                        Submit
+                    </Button>
+                </form>
+            </Modal>
 
-            <h1 className="text-2xl font-bold mb-4">List of Karyawan</h1>
-            {error && <p className="text-red-500">{error}</p>}
-            <div className="overflow-x-auto">
-                <table className="min-w-full bg-white border border-gray-300">
-                    <thead>
-                        <tr>
-                            <th className="py-2 px-4 border-b">Name</th>
-                            <th className="py-2 px-4 border-b">Address</th>
-                            <th className="py-2 px-4 border-b">Phone</th>
-                            <th className="py-2 px-4 border-b">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {karyawan.map((karyawan) => (
-                            <tr key={karyawan.id}>
-                                <td className="py-2 px-4 border-b">{karyawan.name}</td>
-                                <td className="py-2 px-4 border-b">{karyawan.address}</td>
-                                <td className="py-2 px-4 border-b">{karyawan.phone}</td>
-                                <td className="py-2 px-4 border-b space-x-2">
-                                    <button
-                                        className="text-blue-500"
-                                        onClick={() => handleEditModalOpen(karyawan)}
-                                    >
-                                        Edit
-                                        </button>
-                                <button
-                                    className="text-red-500"
-                                    onClick={() => handleDeleteModalOpen(karyawan)}
-                                >
-                                    Delete
-                                </button>
-                            </td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
-        </div>
+            <Modal
+                isOpen={editModalOpen}
+                onClose={() => setEditModalOpen(false)}
+                title="Edit Karyawan"
+            >
+                <form onSubmit={handleEdit}>
+                    <input
+                        type="text"
+                        name="name"
+                        value={editFormData.name}
+                        onChange={handleInputChange}
+                        placeholder="Name"
+                    />
+                    <input
+                        type="text"
+                        name="address"
+                        value={editFormData.address}
+                        onChange={handleInputChange}
+                        placeholder="Address"
+                    />
+                    <input
+                        type="text"
+                        name="phone"
+                        value={editFormData.phone}
+                        onChange={handleInputChange}
+                        placeholder="Phone"
+                    />
+                    <Button
+                        type="submit"
+                        className="bg-blue-500 text-white"
+                    >
+                        Submit
+                    </Button>
+                </form>
+            </Modal>
 
-        <CustomModal
-            isOpen={addModalOpen}
-            onClose={() => setAddModalOpen(false)}
-            onSubmit={handleAddSubmit}
-            title="Add Karyawan"
-        >
-            <input
-                type="text"
-                placeholder="Name"
-                name="name"
-                value={addFormData.name}
-                onChange={handleInputChange}
-                className="mb-2 border border-gray-300 p-2 rounded w-full"
-            />
-            <input
-                type="text"
-                placeholder="Address"
-                name="address"
-                value={addFormData.address}
-                onChange={handleInputChange}
-                className="mb-2 border border-gray-300 p-2 rounded w-full"
-            />
-            <input
-                type="text"
-                placeholder="Phone"
-                name="phone"
-                value={addFormData.phone}
-                onChange={handleInputChange}
-                className="mb-2 border border-gray-300 p-2 rounded w-full"
-            />
-        </CustomModal>
-
-        <CustomModal
-            isOpen={editModalOpen}
-            onClose={() => setEditModalOpen(false)}
-            onSubmit={handleEdit}
-            title="Edit Karyawan"
-        >
-            <input
-                type="text"
-                placeholder="Name"
-                name="name"
-                value={editFormData.name}
-                onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
-                className="mb-2 border border-gray-300 p-2 rounded w-full"
-            />
-            <input
-                type="text"
-                placeholder="Address"
-                name="address"
-                value={editFormData.address}
-                onChange={(e) => setEditFormData({ ...editFormData, address: e.target.value })}
-                className="mb-2 border border-gray-300 p-2 rounded w-full"
-            />
-            <input
-                type="text"
-                placeholder="Phone"
-                name="phone"
-                value={editFormData.phone}
-                onChange={(e) => setEditFormData({ ...editFormData, phone: e.target.value })}
-                className="mb-2 border border-gray-300 p-2 rounded w-full"
-            />
-        </CustomModal>
-
-        <CustomModal
-            isOpen={deleteModalOpen}
-            onClose={() => setDeleteModalOpen(false)}
-            onSubmit={handleDelete}
-            title="Delete Karyawan"
-        >
-            <p>Are you sure you want to delete {selectedKaryawan?.name}?</p>
-        </CustomModal>
-    </div>
-);
+            <Modal
+                isOpen={deleteModalOpen}
+                onClose={() => setDeleteModalOpen(false)}
+                title="Delete Karyawan"
+            >
+                <p>Are you sure you want to delete {selectedKaryawan?.name}?</p>
+                <Button
+                    onClick={handleDelete}
+                    className="bg-red-500 text-white"
+                >
+                    Delete
+                </Button>
+            </Modal>
+        </Layout>
+    );
 };
+
 export default withAuth(Karyawan);

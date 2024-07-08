@@ -5,16 +5,16 @@ import { getTokenCookie } from '../utils/auth';
 import '../styles/globals.css';
 
 function MyApp({ Component, pageProps }: AppProps) {
-    const router = useRouter();
+  const router = useRouter();
 
-    useEffect(() => {
-        const token = getTokenCookie();
-        if (token && (router.pathname === '/' || router.pathname === '/login')) {
-            router.push('/karyawan');
-        }
-    }, [router]);
+  useEffect(() => {
+    const token = getTokenCookie();
+    if (token && (router.pathname === '/' || router.pathname === '/login')) {
+      router.push('/dashboard');
+    }
+  }, [router]);
 
-    return <Component {...pageProps} />;
+  return <Component {...pageProps} />;
 }
 
 export default MyApp;

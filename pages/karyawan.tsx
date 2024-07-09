@@ -5,7 +5,9 @@ import { getTokenCookie } from '../utils/auth';
 import Modal from '../components/Modal';
 import Layout from '../components/layout';
 import Button from '../components/Button';
-import Table from '../components/Table'
+import Table from '../components/Table';
+import Pagination from '@/app/ui/invoices/pagination';
+import queryString from 'query-string';
 
 interface Karyawan {
     id: string;
@@ -32,102 +34,116 @@ const Karyawan: React.FC = () => {
         address: '',
         phone: ''
     });
+    const [currentPage, setCurrentPage] = useState<number>(1);
+    const [totalPages, setTotalPages] = useState<number>(1);
     const router = useRouter();
 
     useEffect(() => {
-        fetchKaryawan();
-    }, []);
+        const query = router.query.page;
+        const page = query ? parseInt(query as string, 10) : 1;
+        setCurrentPage(page);
+    }, [router.query.page]);
 
-    const fetchKaryawan = async () => {
+    useEffect(() => {
+        fetchKaryawan(currentPage);
+    }, [currentPage]);
+
+    const fetchKaryawan = async (page: number) => {
         try {
             const token = getTokenCookie();
             if (!token) {
                 router.push('/login');
                 return;
             }
-            const { data } = await axios.get<Karyawan[]>('http://localhost:8000/api/karyawan', {
+            const response = await axios.get(`http://localhost:8000/api/karyawan?${queryString.stringify({ page })}`, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
             });
-            setKaryawan(data);
+            const data = response.data;
+            console.log('API Response:', data);
+            if (data && Array.isArray(data.data)) {
+                setKaryawan(data.data);
+                setTotalPages(data.last_page || 1);
+            } else {
+                setError('Error fetching karyawan data');
+            }
         } catch (error) {
+            console.error('Error fetching karyawan data:', error);
             setError('Error fetching karyawan data');
         }
     };
 
-    const handleDelete = async () => {
-        try {
-            const token = getTokenCookie();
-            if (selectedKaryawan && token) {
-                await axios.delete(`http://localhost:8000/api/karyawandelete/${selectedKaryawan.id}`, {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                });
-                setKaryawan(karyawan.filter(k => k.id !== selectedKaryawan.id));
-                setDeleteModalOpen(false);
-            }
-        } catch (error) {
-            if (error.response && error.response.data) {
-                setError(error.response.data.message);
-            } else {
-                setError('Error deleting karyawan data');
-            }
-        }
+    const handlePageChange = (newPage: number) => {
+        setCurrentPage(newPage);
+        router.push(`/karyawan?page=${newPage}`, undefined, { shallow: true });
     };
 
-    const handleEdit = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const handleAdd = () => {
+        setAddModalOpen(true);
+    };
+
+    const handleAddSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
         try {
             const token = getTokenCookie();
-            await axios.put(`http://localhost:8000/api/karyawanupdate/${editFormData.id}`, editFormData, {
+            if (!token) {
+                router.push('/login');
+                return;
+            }
+            const { data } = await axios.post('http://localhost:8000/api/karyawan', addFormData, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
             });
-            const updatedKaryawan = karyawan.map(k => k.id === editFormData.id ? editFormData : k);
-            setKaryawan(updatedKaryawan);
-            setEditModalOpen(false);
-        } catch (error) {
-            setError('Error editing karyawan data');
-        }
-    };
-
-    const handleAddSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        try {
-            const token = getTokenCookie();
-            await axios.post('http://localhost:8000/api/karyawancreate', addFormData, {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-            });
-            fetchKaryawan();
+            setKaryawan([...karyawan, data]);
             setAddModalOpen(false);
-            setAddFormData({
-                name: '',
-                address: '',
-                phone: ''
-            });
+            setAddFormData({ name: '', address: '', phone: '' });
         } catch (error) {
-            if (error.response && error.response.data) {
-                setError(error.response.data.message);
-            } else {
-                setError('Error adding karyawan data');
-            }
+            console.error('Error adding karyawan:', error);
+            setError('Error adding karyawan');
         }
+    };
+
+    const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        setAddFormData({
+            ...addFormData,
+            [event.target.name]: event.target.value,
+        });
     };
 
     const handleEditModalOpen = (karyawan: Karyawan) => {
-        setSelectedKaryawan(karyawan);
-        setEditFormData({
-            id: karyawan.id,
-            name: karyawan.name,
-            address: karyawan.address,
-            phone: karyawan.phone
-        });
+        setEditFormData(karyawan);
         setEditModalOpen(true);
+    };
+
+    const handleEdit = async (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        try {
+            const token = getTokenCookie();
+            if (!token) {
+                router.push('/login');
+                return;
+            }
+            const { data } = await axios.put(`http://localhost:8000/api/karyawan/${editFormData.id}`, editFormData, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+            const updatedKaryawan = karyawan.map((k) => (k.id === editFormData.id ? data : k));
+            setKaryawan(updatedKaryawan);
+            setEditModalOpen(false);
+        } catch (error) {
+            console.error('Error editing karyawan:', error);
+            setError('Error editing karyawan');
+        }
+    };
+
+    const handleEditInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        setEditFormData({
+            ...editFormData,
+            [event.target.name]: event.target.value,
+        });
     };
 
     const handleDeleteModalOpen = (karyawan: Karyawan) => {
@@ -135,22 +151,24 @@ const Karyawan: React.FC = () => {
         setDeleteModalOpen(true);
     };
 
-    const handleAdd = () => {
-        setAddModalOpen(true);
-    };
-
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const { name, value } = e.target;
-        if (editModalOpen) {
-            setEditFormData({
-                ...editFormData,
-                [name]: value
+    const handleDelete = async () => {
+        if (!selectedKaryawan) return;
+        try {
+            const token = getTokenCookie();
+            if (!token) {
+                router.push('/login');
+                return;
+            }
+            await axios.delete(`http://localhost:8000/api/karyawan/${selectedKaryawan.id}`, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
             });
-        } else {
-            setAddFormData({
-                ...addFormData,
-                [name]: value
-            });
+            setKaryawan(karyawan.filter((k) => k.id !== selectedKaryawan.id));
+            setDeleteModalOpen(false);
+        } catch (error) {
+            console.error('Error deleting karyawan:', error);
+            setError('Error deleting karyawan');
         }
     };
 
@@ -171,6 +189,11 @@ const Karyawan: React.FC = () => {
                             <Button onClick={() => handleDeleteModalOpen(item)} className="bg-red-500 text-white">Delete</Button>
                         </>
                     )}
+                />
+                <Pagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={handlePageChange}
                 />
                 <Modal
                     isOpen={addModalOpen}
@@ -202,9 +225,7 @@ const Karyawan: React.FC = () => {
                             placeholder="Phone"
                             className="block w-full mb-2"
                         />
-                        <button type="submit" className="bg-blue-500 text-white px-4 py-2">
-                            Add
-                        </button>
+                        <Button type="submit" className="bg-blue-500 text-white">Add</Button>
                     </form>
                 </Modal>
                 <Modal
@@ -214,10 +235,15 @@ const Karyawan: React.FC = () => {
                 >
                     <form onSubmit={handleEdit}>
                         <input
+                            type="hidden"
+                            name="id"
+                            value={editFormData.id}
+                        />
+                        <input
                             type="text"
                             name="name"
                             value={editFormData.name}
-                            onChange={handleInputChange}
+                            onChange={handleEditInputChange}
                             placeholder="Name"
                             className="block w-full mb-2"
                         />
@@ -225,7 +251,7 @@ const Karyawan: React.FC = () => {
                             type="text"
                             name="address"
                             value={editFormData.address}
-                            onChange={handleInputChange}
+                            onChange={handleEditInputChange}
                             placeholder="Address"
                             className="block w-full mb-2"
                         />
@@ -233,13 +259,11 @@ const Karyawan: React.FC = () => {
                             type="text"
                             name="phone"
                             value={editFormData.phone}
-                            onChange={handleInputChange}
+                            onChange={handleEditInputChange}
                             placeholder="Phone"
                             className="block w-full mb-2"
                         />
-                        <button type="submit" className="bg-blue-500 text-white px-4 py-2">
-                            Save
-                        </button>
+                        <Button type="submit" className="bg-blue-500 text-white">Update</Button>
                     </form>
                 </Modal>
                 <Modal
@@ -248,20 +272,7 @@ const Karyawan: React.FC = () => {
                     title="Delete Karyawan"
                 >
                     <p>Are you sure you want to delete this karyawan?</p>
-                    <div className="flex justify-end">
-                        <button
-                            onClick={() => setDeleteModalOpen(false)}
-                            className="bg-gray-500 text-white px-4 py-2 mr-2"
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            onClick={handleDelete}
-                            className="bg-red-500 text-white px-4 py-2"
-                        >
-                            Delete
-                        </button>
-                    </div>
+                    <Button onClick={handleDelete} className="bg-red-500 text-white">Delete</Button>
                 </Modal>
             </div>
         </Layout>

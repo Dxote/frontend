@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Transition } from 'react-transition-group';
-import { HomeIcon, UserIcon, BriefcaseIcon, CalendarIcon } from '@heroicons/react/outline';
+import { HomeIcon, UserIcon, BriefcaseIcon, CalendarIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 
 const Sidebar = () => {

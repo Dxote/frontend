@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { useRouter } from 'next/router';
 import styles from '../styles/login.module.css';
-import { setTokenCookie } from '../utils/auth';
+import { setTokenCookie, getTokenCookie } from '../utils/auth';
 import { format } from 'date-fns';
 
 export default function Login() {
@@ -24,6 +24,10 @@ export default function Login() {
       await axios.post('http://localhost:8000/api/absensi', {
         email,
         login_time: loginTime,
+      }, {
+        headers: {
+          Authorization: `Bearer ${data.token}`,
+        },
       });
 
       router.push('/dashboard');

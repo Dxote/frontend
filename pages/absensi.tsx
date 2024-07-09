@@ -5,6 +5,7 @@ import { getTokenCookie } from '../utils/auth';
 import Layout from '../components/Layout';
 import Button from '../components/Button';
 import Modal from '../components/Modal';
+import Pagination from '@/app/ui/invoices/pagination'; // Adjust this path as per your project structure
 
 interface Absensi {
   id: string;
@@ -17,13 +18,21 @@ const Absensi: React.FC = () => {
   const [selectedAbsensi, setSelectedAbsensi] = useState<Absensi | null>(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState<number>(1); // State for current page
+  const [totalPages, setTotalPages] = useState<number>(1); // State for total pages
   const router = useRouter();
 
   useEffect(() => {
-    fetchAbsensi();
-  }, []);
+    const query = router.query.page;
+    const page = query ? parseInt(query as string, 10) : 1;
+    setCurrentPage(page);
+  }, [router.query.page]);
 
-  const fetchAbsensi = async () => {
+  useEffect(() => {
+    fetchAbsensi(currentPage);
+  }, [currentPage]);
+
+  const fetchAbsensi = async (page: number) => {
     try {
       const token = getTokenCookie();
       if (!token) {
@@ -34,8 +43,12 @@ const Absensi: React.FC = () => {
         headers: {
           Authorization: `Bearer ${token}`,
         },
+        params: { page } // Add pagination parameter
       });
       setAbsensi(data);
+      // Assuming your API returns pagination information like total pages
+      // Adjust this according to your API response structure
+      setTotalPages(data.last_page || 1);
     } catch (error) {
       setError('Error fetching absensi data');
       console.error('Error fetching absensi:', error);
@@ -67,6 +80,11 @@ const Absensi: React.FC = () => {
     setDeleteModalOpen(true);
   };
 
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage);
+    router.push(`/absensi?page=${newPage}`, undefined, { shallow: true });
+  };
+
   return (
     <Layout>
       <div className="container mx-auto p-4">
@@ -96,6 +114,11 @@ const Absensi: React.FC = () => {
             ))}
           </tbody>
         </table>
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={handlePageChange}
+        />
         <Modal
           isOpen={deleteModalOpen}
           onClose={() => setDeleteModalOpen(false)}

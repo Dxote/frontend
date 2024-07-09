@@ -1,119 +1,57 @@
 'use client';
 
-import { ArrowLeftIcon, ArrowRightIcon } from '@heroicons/react/24/outline';
-import clsx from 'clsx';
+import React from 'react';
 import Link from 'next/link';
 import { generatePagination } from '@/app/lib/utils';
+import Button from '@/components/Button/Button';
 
-export default function Pagination({ totalPages }: { totalPages: number }) {
-  // NOTE: Uncomment this code in Chapter 7
+export default function Pagination({ currentPage, totalPages }: { currentPage: number, totalPages: number }) {
+  if (isNaN(currentPage) || isNaN(totalPages)) {
+    return null;
+  }
 
-  // const allPages = generatePagination(currentPage, totalPages);
+  const pages = generatePagination(currentPage, totalPages);
 
   return (
-    <>
-      {/*  NOTE: Uncomment this code in Chapter 7 */}
-
-      {/* <div className="inline-flex">
-        <PaginationArrow
-          direction="left"
-          href={createPageURL(currentPage - 1)}
-          isDisabled={currentPage <= 1}
-        />
-
-        <div className="flex -space-x-px">
-          {allPages.map((page, index) => {
-            let position: 'first' | 'last' | 'single' | 'middle' | undefined;
-
-            if (index === 0) position = 'first';
-            if (index === allPages.length - 1) position = 'last';
-            if (allPages.length === 1) position = 'single';
-            if (page === '...') position = 'middle';
-
-            return (
-              <PaginationNumber
-                key={page}
-                href={createPageURL(page)}
-                page={page}
-                position={position}
-                isActive={currentPage === page}
-              />
-            );
-          })}
+    <div className="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6">
+      <div className="flex flex-1 justify-between sm:hidden">
+        <Link href={`?page=${currentPage - 1}`}>
+          <Button className={`text-gray-700 bg-gray-300 ${currentPage === 1 ? 'opacity-50 pointer-events-none' : 'hover:bg-gray-400 hover:text-white'}`}>
+            Previous
+          </Button>
+        </Link>
+        <Link href={`?page=${currentPage + 1}`}>
+          <Button className={`text-gray-700 bg-gray-300 ${currentPage === totalPages ? 'opacity-50 pointer-events-none' : 'hover:bg-gray-400 hover:text-white'}`}>
+            Next
+          </Button>
+        </Link>
+      </div>
+      <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+        <div>
+          <p className="text-sm text-gray-700">
+            Showing page <span className="font-medium">{currentPage}</span> of <span className="font-medium">{totalPages}</span>
+          </p>
         </div>
-
-        <PaginationArrow
-          direction="right"
-          href={createPageURL(currentPage + 1)}
-          isDisabled={currentPage >= totalPages}
-        />
-      </div> */}
-    </>
-  );
-}
-
-function PaginationNumber({
-  page,
-  href,
-  isActive,
-  position,
-}: {
-  page: number | string;
-  href: string;
-  position?: 'first' | 'last' | 'middle' | 'single';
-  isActive: boolean;
-}) {
-  const className = clsx(
-    'flex h-10 w-10 items-center justify-center text-sm border',
-    {
-      'rounded-l-md': position === 'first' || position === 'single',
-      'rounded-r-md': position === 'last' || position === 'single',
-      'z-10 bg-blue-600 border-blue-600 text-white': isActive,
-      'hover:bg-gray-100': !isActive && position !== 'middle',
-      'text-gray-300': position === 'middle',
-    },
-  );
-
-  return isActive || position === 'middle' ? (
-    <div className={className}>{page}</div>
-  ) : (
-    <Link href={href} className={className}>
-      {page}
-    </Link>
-  );
-}
-
-function PaginationArrow({
-  href,
-  direction,
-  isDisabled,
-}: {
-  href: string;
-  direction: 'left' | 'right';
-  isDisabled?: boolean;
-}) {
-  const className = clsx(
-    'flex h-10 w-10 items-center justify-center rounded-md border',
-    {
-      'pointer-events-none text-gray-300': isDisabled,
-      'hover:bg-gray-100': !isDisabled,
-      'mr-2 md:mr-4': direction === 'left',
-      'ml-2 md:ml-4': direction === 'right',
-    },
-  );
-
-  const icon =
-    direction === 'left' ? (
-      <ArrowLeftIcon className="w-4" />
-    ) : (
-      <ArrowRightIcon className="w-4" />
-    );
-
-  return isDisabled ? (
-    <div className={className}>{icon}</div>
-  ) : (
-    <Link className={className} href={href}>
-      {icon}
-    </Link>
+        <div>
+          <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+            <Link href={`?page=${currentPage - 1}`}>
+              <Button className={`text-gray-700 bg-gray-300 ${currentPage === 1 ? 'opacity-50 pointer-events-none' : 'hover:bg-gray-400 hover:text-white'}`}>
+                Previous
+              </Button>
+            </Link>
+            {pages.map((page) => (
+              <Link key={page} href={`?page=${page}`} className={`relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium ${page === currentPage ? 'bg-indigo-50 border-indigo-500 text-indigo-600' : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'}`}>
+                {page}
+              </Link>
+            ))}
+            <Link href={`?page=${currentPage + 1}`}>
+              <Button className={`text-gray-700 bg-gray-300 ${currentPage === totalPages ? 'opacity-50 pointer-events-none' : 'hover:bg-gray-400 hover:text-white'}`}>
+                Next
+              </Button>
+            </Link>
+          </nav>
+        </div>
+      </div>
+    </div>
   );
 }
